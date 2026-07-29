@@ -25,6 +25,9 @@ export default function Nav() {
       <Link href="/about" className={linkClass('/about')}>
         About
       </Link>
+      <Link href="/blog" className={linkClass('/blog')}>
+        Blog
+      </Link>
 
       {/* Pushed to the right, a deliberately WRONG way to link, for contrast. */}
       <a
