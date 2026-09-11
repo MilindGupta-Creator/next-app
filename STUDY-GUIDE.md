@@ -2,7 +2,7 @@
 
 > **Your morning-revision ebook.** Read it top-to-bottom. Each topic has: the **idea** (plain English), an **analogy** to make it stick, the **code** we wrote, and the **interview angle** (what they'll actually ask).
 >
-> Kept up to date after every lesson. Last updated: **2026-07-25** · Next.js **16.2.10** (App Router).
+> Kept up to date after every lesson. Last updated: **2026-09-11** · Next.js **16.2.10** (App Router).
 
 ---
 
@@ -15,6 +15,7 @@
 - [x] Day 3½ — Static vs Dynamic vs ISR (the "when is the HTML made?" idea)
 - [x] Day 4 — Data fetching & revalidation — ISR made real (`revalidate`), watched stale-while-revalidate live
 - [x] Day 4½ — Revision: interview drill for Days 1–4 (Part 5 below)
+- [x] Day 1-redux (2026-09-11) — Server/Client **boundary placement**: leaf client islands, module graph vs `children`, compile-time vs render-time failures (§1.3)
 - [ ] Day 5 — Rendering strategies recap (CSR / SSR / SSG / ISR / PPR)
 - [ ] Day 6 — Streaming, Suspense, `loading.tsx`, `error.tsx`
 - [ ] Day 7 — Review + mini mock
@@ -115,6 +116,60 @@ export default function Counter() {
 - *"What is a hydration mismatch?"* → The server HTML and the first browser render disagree, so React throws a warning and re-renders. **Top cause:** using `Date.now()`, `Math.random()`, `localStorage`, or `typeof window` during render — the server and browser produce different output.
 
 ---
+
+### 1.3 Where to PUT the boundary — push `'use client'` to the leaves (Day 2)
+
+**The idea.** Knowing *what* `'use client'` does is the easy half. The interview half is *where you put it*. Rule: keep the boundary as **low in the tree as possible** — only the interactive leaf becomes a Client Component, everything above it stays on the server.
+
+```
+JobsPage    SERVER   ← data, layout, markup
+  └ JobList   SERVER
+      └ JobCard  SERVER
+          └ SaveButton  CLIENT  ← only this ships JS
+```
+
+If instead you put `'use client'` on `JobsPage`, **the whole subtree** becomes client code. That is the mistake they're probing for.
+
+**The rule that explains it.** `'use client'` marks a boundary in the **module graph**. Every file a Client Component *imports* is pulled into the client bundle too. But components passed to it as **`children` / props are NOT** — those are rendered on the server and handed over as finished output. That's why `<ClientModal><ServerCart /></ClientModal>` works.
+
+**Code we wrote.** `src/components/SaveButton.tsx` is the only file under `/jobs` with the directive; `page.tsx`, `JobList.tsx` and `JobCard.tsx` have none.
+
+**The two failure modes — they are NOT the same error** 🔑
+
+We broke it on purpose and read the real output.
+
+*Experiment 1 — drop `'use client'`, keep `useState`.* Fails at **build/compile** time:
+```
+./src/components/SaveButton.tsx:1:10
+You're importing a module that depends on `useState` into a React Server
+Component module. This API is only available in Client Components.
+Import trace:
+  Server Component:
+    ./src/components/SaveButton.tsx → JobCard.tsx → JobList.tsx → app/jobs/page.tsx
+```
+Note the **import trace** — it walks you back to the server file that poisoned the chain. Read it top-down to find where the boundary belongs.
+
+*Experiment 2 — a component that reads `window.location.href`.* This one **compiles fine** and dies later, during prerender:
+```
+ReferenceError: window is not defined
+Error occurred prerendering page "/jobs"
+```
+Compile-time vs render-time. `useState` is a *static import* Next can see while bundling. `window` is a *runtime* lookup, so nothing catches it until the server actually executes the render.
+
+**The trap answer** 🪤 Adding `'use client'` **did not fix experiment 2.** Same `ReferenceError`. Because (see 1.2) a Client Component **still renders on the server** to make the initial HTML, and there is no `window` there. The real fix is to defer the read to an effect:
+```tsx
+'use client';
+const [href, setHref] = useState<string | null>(null);
+useEffect(() => { setHref(window.location.href); }, []);  // effects never run on the server
+```
+Starting at `null` also keeps the server HTML and first client render identical, so no hydration mismatch.
+
+**Interview angle.**
+- *"When would you reach for `'use client'`?"* → state, event handlers, effects/lifecycle, browser APIs, custom hooks, and client hooks like `usePathname`.
+- *"Why not just put it at the top of every page?"* → You hand back the Server Component wins: bigger JS bundle, slower FCP, and you lose direct DB/secret access in that subtree.
+- *"`'use client'` means the component only runs in the browser — true or false?"* → **False.** It means it *also* ships JS and hydrates. It still prerenders on the server. This is the single most common wrong answer.
+- *"You need `window` in a component. Server or Client?"* → Client **and** guarded in `useEffect`. The directive alone is not enough.
+- *"Do you write `'use server'` to make a Server Component?"* → No. Server is the default. `'use server'` marks **Server Actions**, a different thing entirely.
 
 ## Part 2 — Routing & Navigation
 
