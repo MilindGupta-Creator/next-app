@@ -1,4 +1,7 @@
 // src/app/about/page.tsx  →  serves the URL /about
+
+import Link from "next/link";
+
 // No 'use client' → this is a Server Component (the default).
 export default function AboutPage() {
   return (
@@ -10,6 +13,8 @@ export default function AboutPage() {
         inside the <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">about/</code> folder.
         The folder name became the URL.
       </p>
+
+      <Link href="/jobs">Jobs</Link>
     </main>
   );
 }
