@@ -1,4 +1,5 @@
 // Server Component (no "use client"), so none of this code is sent to the browser.
+import SaveButton from "./SaveButton";
 import type { Job } from "./types";
 
 // Takes ONE job. The { job } part pulls the job prop out of the props object.
@@ -9,6 +10,7 @@ const JobCard = ({ job }: { job: Job }) => {
       <p>{job.company}</p>
       <p>{job.location}</p>
       <p>{job.description}</p>
+      <SaveButton jobId={job.id} />
     </li>
   );
 };
