@@ -23,6 +23,10 @@ export default async function JobDetailsPage({
 
   const res = await fetch(`https://api.vercel.app/blog/${id}`);
 
+  if(res.status === 404) {
+    notFound();
+  }
+
   if (!res.ok) {
     throw new Error("Failed to fetch job details");
   }
