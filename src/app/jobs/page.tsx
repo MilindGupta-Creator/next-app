@@ -2,6 +2,9 @@ import JobList from "./JobList";
 import type { Job } from "./types";
 
 const JobsPage = async () => {
+
+  await new Promise((resolve) => setTimeout(resolve, 3000)); // Simulate a delay for demonstration purposes
+
   const res = await fetch("https://api.vercel.app/blog");
 
   if (!res.ok) {
@@ -24,8 +27,6 @@ const JobsPage = async () => {
   return (
     <div>
       <h1>Job Listings</h1>
-
-      {/* we'll adapt data here */}
       <JobList jobs={jobs} />
     </div>
   );
