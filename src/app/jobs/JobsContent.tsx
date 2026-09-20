@@ -16,7 +16,7 @@ export default async function JobsContent() {
     title: job.title,
     company: "Vercel",
     location: "Remote",
-    description: job.description ?? "Not provided",
+    description: job.content ?? "Not provided",
   }));
 
   return <JobList jobs={jobs} />;
