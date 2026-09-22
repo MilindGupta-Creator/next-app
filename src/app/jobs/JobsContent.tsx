@@ -1,8 +1,13 @@
 import JobList from "./JobList";
 import type { Job } from "./types";
 
-export default async function JobsContent() {
+type JobsContentProps = {
+  query?: string;
+};
 
+export default async function JobsContent({
+  query,
+}: JobsContentProps) {
   const res = await fetch("https://api.vercel.app/blog");
 
   if (!res.ok) {
@@ -19,5 +24,11 @@ export default async function JobsContent() {
     description: job.content ?? "Not provided",
   }));
 
-  return <JobList jobs={jobs} />;
+  const filteredJobs = query
+    ? jobs.filter((job) =>
+        job.title.toLowerCase().includes(query.toLowerCase())
+      )
+    : jobs;
+
+  return <JobList jobs={filteredJobs} />;
 }
