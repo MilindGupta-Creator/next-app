@@ -1,30 +1,40 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Search() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
 
-  function handleSearch(term: string) {
-    const params = new URLSearchParams(searchParams.toString());
+  const [term, setTerm] = useState(searchParams.get("query") ?? "");
 
-    if (term) {
-      params.set("query", term);
-    } else {
-      params.delete("query");
-    }
+  useEffect(() => {
 
-    router.replace(`${pathname}?${params.toString()}`);
-  }
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (term) {
+        params.set("query", term);
+      } else {
+        params.delete("query");
+      }
+
+      router.replace(`${pathname}?${params.toString()}`);
+    }, 300)
+
+    return () => clearTimeout(timer);
+
+  }, [term])
+
+
 
   return (
     <input
       type="text"
       placeholder="Search jobs..."
       defaultValue={searchParams.get("query") ?? ""}
-      onChange={(e) => handleSearch(e.target.value)}
+      onChange={(e) => setTerm(e.target.value)}
     />
   );
 }
